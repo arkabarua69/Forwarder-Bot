@@ -1,4 +1,4 @@
-const BASE_URL = "https://forwarder-bot-1.onrender.com"; // Flask backend URL
+const BASE_URL = "http://192.168.0.105:5000"; // Flask backend URL
 
 // Start the Telegram bot
 async function startBot() {
