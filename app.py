@@ -48,7 +48,9 @@ async def forward_channel_message(update: Update, context: ContextTypes.DEFAULT_
                 from_chat_id=SOURCE_CHAT_ID,
                 message_id=update.channel_post.message_id,
             )
-            log_message(f"Copied channel post ID {update.channel_post.message_id} to target.")
+            log_message(
+                f"Copied channel post ID {update.channel_post.message_id} to target."
+            )
 
     except Exception as e:
         log_message(f"Error copying message: {e}")
@@ -62,16 +64,6 @@ def run_bot():
     log_message("Bot is running...")
     # drop_pending_updates prevents conflicts with previous bot sessions
     application.run_polling(drop_pending_updates=True)
-
-
-def start_bot_thread():
-    """Start the bot in a daemon thread safely."""
-    global bot_thread
-    if bot_thread and bot_thread.is_alive():
-        log_message("Bot is already running.")
-        return
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
 
 
 # ----------------- Flask endpoints -----------------
@@ -90,7 +82,6 @@ def start():
     except ValueError:
         return jsonify({"message": "Invalid chat IDs"}), 400
 
-    start_bot_thread()
     log_message(f"Bot started with Source: {SOURCE_CHAT_ID}, Target: {TARGET_CHAT_ID}")
     return jsonify({"message": "Bot started successfully!"})
 
@@ -102,5 +93,12 @@ def get_logs():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    # Start Flask in a separate thread (daemon)
+    flask_thread = threading.Thread(
+        target=lambda: app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000))),
+        daemon=True,
+    )
+    flask_thread.start()
+
+    # Run the Telegram bot in the main thread
+    run_bot()
